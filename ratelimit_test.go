@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	gc "gopkg.in/check.v1"
+	"gopkg.in/check.v1"
 )
 
 func TestPackage(t *testing.T) {
-	gc.TestingT(t)
+	check.TestingT(t)
 }
 
 type rateLimitSuite struct{}
 
-var _ = gc.Suite(rateLimitSuite{})
+var _ = check.Suite(rateLimitSuite{})
 
 type takeReq struct {
 	time       time.Duration
@@ -169,12 +169,12 @@ var availTests = []struct {
 	expectCountAfterSleep: 2,
 }}
 
-func (rateLimitSuite) TestTake(c *gc.C) {
+func (rateLimitSuite) TestTake(c *check.C) {
 	for i, test := range takeTests {
 		tb := NewBucket(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
 			d, ok := tb.take(tb.startTime.Add(req.time), req.count, infinityDuration)
-			c.Assert(ok, gc.Equals, true)
+			c.Assert(ok, check.Equals, true)
 			if d != req.expectWait {
 				c.Fatalf("test %d.%d, %s, got %v want %v", i, j, test.about, d, req.expectWait)
 			}
@@ -182,17 +182,17 @@ func (rateLimitSuite) TestTake(c *gc.C) {
 	}
 }
 
-func (rateLimitSuite) TestTakeMaxDuration(c *gc.C) {
+func (rateLimitSuite) TestTakeMaxDuration(c *check.C) {
 	for i, test := range takeTests {
 		tb := NewBucket(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
 			if req.expectWait > 0 {
 				d, ok := tb.take(tb.startTime.Add(req.time), req.count, req.expectWait-1)
-				c.Assert(ok, gc.Equals, false)
-				c.Assert(d, gc.Equals, time.Duration(0))
+				c.Assert(ok, check.Equals, false)
+				c.Assert(d, check.Equals, time.Duration(0))
 			}
 			d, ok := tb.take(tb.startTime.Add(req.time), req.count, req.expectWait)
-			c.Assert(ok, gc.Equals, true)
+			c.Assert(ok, check.Equals, true)
 			if d != req.expectWait {
 				c.Fatalf("test %d.%d, %s, got %v want %v", i, j, test.about, d, req.expectWait)
 			}
@@ -285,7 +285,7 @@ var takeAvailableTests = []struct {
 	}},
 }}
 
-func (rateLimitSuite) TestTakeAvailable(c *gc.C) {
+func (rateLimitSuite) TestTakeAvailable(c *check.C) {
 	for i, test := range takeAvailableTests {
 		tb := NewBucket(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
@@ -297,18 +297,18 @@ func (rateLimitSuite) TestTakeAvailable(c *gc.C) {
 	}
 }
 
-func (rateLimitSuite) TestPanics(c *gc.C) {
-	c.Assert(func() { NewBucket(0, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
-	c.Assert(func() { NewBucket(-2, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
-	c.Assert(func() { NewBucket(1, 0) }, gc.PanicMatches, "token bucket capacity is not > 0")
-	c.Assert(func() { NewBucket(1, -2) }, gc.PanicMatches, "token bucket capacity is not > 0")
+func (rateLimitSuite) TestPanics(c *check.C) {
+	c.Assert(func() { NewBucket(0, 1) }, check.PanicMatches, "token bucket fill interval is not > 0")
+	c.Assert(func() { NewBucket(-2, 1) }, check.PanicMatches, "token bucket fill interval is not > 0")
+	c.Assert(func() { NewBucket(1, 0) }, check.PanicMatches, "token bucket capacity is not > 0")
+	c.Assert(func() { NewBucket(1, -2) }, check.PanicMatches, "token bucket capacity is not > 0")
 }
 
 func isCloseTo(x, y, tolerance float64) bool {
 	return math.Abs(x-y)/y < tolerance
 }
 
-func (rateLimitSuite) TestRate(c *gc.C) {
+func (rateLimitSuite) TestRate(c *check.C) {
 	tb := NewBucket(1, 1)
 	if !isCloseTo(tb.Rate(), 1e9, 0.00001) {
 		c.Fatalf("got %v want 1e9", tb.Rate())
@@ -323,28 +323,28 @@ func (rateLimitSuite) TestRate(c *gc.C) {
 	}
 }
 
-func checkRate(c *gc.C, rate float64) {
+func checkRate(c *check.C, rate float64) {
 	tb := NewBucketWithRate(rate, 1<<62)
 	if !isCloseTo(tb.Rate(), rate, rateMargin) {
 		c.Fatalf("got %g want %v", tb.Rate(), rate)
 	}
 	d, ok := tb.take(tb.startTime, 1<<62, infinityDuration)
-	c.Assert(ok, gc.Equals, true)
-	c.Assert(d, gc.Equals, time.Duration(0))
+	c.Assert(ok, check.Equals, true)
+	c.Assert(d, check.Equals, time.Duration(0))
 
 	// Check that the actual rate is as expected by
 	// asking for a not-quite multiple of the bucket's
 	// quantum and checking that the wait time
 	// correct.
 	d, ok = tb.take(tb.startTime, tb.quantum*2-tb.quantum/2, infinityDuration)
-	c.Assert(ok, gc.Equals, true)
+	c.Assert(ok, check.Equals, true)
 	expectTime := 1e9 * float64(tb.quantum) * 2 / rate
 	if !isCloseTo(float64(d), expectTime, rateMargin) {
 		c.Fatalf("rate %g: got %g want %v", rate, float64(d), expectTime)
 	}
 }
 
-func (rateLimitSuite) NewBucketWithRate(c *gc.C) {
+func (rateLimitSuite) NewBucketWithRate(c *check.C) {
 	for rate := float64(1); rate < 1e6; rate += 7 {
 		checkRate(c, rate)
 	}
