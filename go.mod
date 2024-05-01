@@ -1,4 +1,4 @@
-module ratelimit
+module github.com/uncle-gua/ratelimit
 
 go 1.22.1
 
