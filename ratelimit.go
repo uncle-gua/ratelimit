@@ -80,10 +80,14 @@ func NewBucket(fillInterval time.Duration, capacity int64) *Bucket {
 	return NewBucketWithClock(fillInterval, capacity, nil)
 }
 
+func NewBucketWithAvaliable(fillInterval time.Duration, capacity, avaliable int64) *Bucket {
+	return NewBucketWithQuantumAndClock(fillInterval, capacity, avaliable, 1, nil)
+}
+
 // NewBucketWithClock is identical to NewBucket but injects a testable clock
 // interface.
 func NewBucketWithClock(fillInterval time.Duration, capacity int64, clock Clock) *Bucket {
-	return NewBucketWithQuantumAndClock(fillInterval, capacity, 1, clock)
+	return NewBucketWithQuantumAndClock(fillInterval, capacity, capacity, 1, clock)
 }
 
 // rateMargin specifes the allowed variance of actual
@@ -104,7 +108,7 @@ func NewBucketWithRate(rate float64, capacity int64) *Bucket {
 func NewBucketWithRateAndClock(rate float64, capacity int64, clock Clock) *Bucket {
 	// Use the same bucket each time through the loop
 	// to save allocations.
-	tb := NewBucketWithQuantumAndClock(1, capacity, 1, clock)
+	tb := NewBucketWithQuantumAndClock(1, capacity, capacity, 1, clock)
 	for quantum := int64(1); quantum < 1<<50; quantum = nextQuantum(quantum) {
 		fillInterval := time.Duration(1e9 * float64(quantum) / rate)
 		if fillInterval <= 0 {
@@ -134,13 +138,13 @@ func nextQuantum(q int64) int64 {
 // the specification of the quantum size - quantum tokens
 // are added every fillInterval.
 func NewBucketWithQuantum(fillInterval time.Duration, capacity, quantum int64) *Bucket {
-	return NewBucketWithQuantumAndClock(fillInterval, capacity, quantum, nil)
+	return NewBucketWithQuantumAndClock(fillInterval, capacity, capacity, quantum, nil)
 }
 
 // NewBucketWithQuantumAndClock is like NewBucketWithQuantum, but
 // also has a clock argument that allows clients to fake the passing
 // of time. If clock is nil, the system clock will be used.
-func NewBucketWithQuantumAndClock(fillInterval time.Duration, capacity, quantum int64, clock Clock) *Bucket {
+func NewBucketWithQuantumAndClock(fillInterval time.Duration, capacity, available, quantum int64, clock Clock) *Bucket {
 	if clock == nil {
 		clock = realClock{}
 	}
@@ -160,7 +164,7 @@ func NewBucketWithQuantumAndClock(fillInterval time.Duration, capacity, quantum 
 		fillInterval:    fillInterval,
 		capacity:        capacity,
 		quantum:         quantum,
-		availableTokens: capacity,
+		availableTokens: available,
 	}
 }
 
